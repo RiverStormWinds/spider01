@@ -1,0 +1,243 @@
+
+# 基于md5生成新的图片名
+import hashlib
+img_url = 'http://www.doc88.com/snapshot/home/1024489140.png'
+img_part = img_url.split('/')[-1].split('.')
+new_str = hashlib.md5(img_part[0].encode()).hexdigest()
+old_str = img_part[0]
+print(new_str)
+print(old_str)
+new_img_url = img_url.replace(old_str, new_str)
+print(new_img_url)
+
+
+1. 爬虫基础总结
+    1.导入python：urllib包，此包提供了四个模块，
+        1.request请求处理模块，利用rul对网络进行请求，并获取网络的请求响应
+        基本语法：
+        from urllib import request  # 先将requet模块从rullib中引入
+        url = 'http://www.baidu.com'  #  在将需要爬取的rul确定
+        response = request.urlopen(url)  # 用request.urlopen(url)进行获取网页的回应
+        response.status  # 此为回应状态，200则为正常回应
+        response.read().decode()  # 将二进制字节码转换成utf8的数据进行输出
+        response.readline()/response.readlines()  # 读取一行数据，或者读取整个页面的数据
+        b''.join(response.readlines())).decode()  # 用readline或readlines读取到的数据为列表类型
+        需要进行 b''.join() 进行字符串转化切割，
+        with open ('./spider_data/a.html', 'w') as f:
+            f.write(response.read().decode())  # 将数据以a.html格式写入spider_data文件夹下
+
+2.具体操作过程：
+    s = response.read().decode()
+    with open ('./spider_data/a.html', 'w') as f:
+        f.write(s)
+
+    这种方式也可以一步到位
+    url = 'http://www.baidu.com'
+    request.urlretrieve(url)
+    request.urlretrieve(url)这种方式是最直接，最简单的方式
+
+3.视频，图像等数据爬取
+    视频图像等数据的爬取与字符串爬取方式一致，
+    from urllib import request
+
+    mp4_url = 'http://vali.cp31.ott.cibntv.net/youku/' \
+              '6572ea18f04337143fe436c7e/' \
+              '03000801005B19E55028BA1552FA5BD04B1B70-4A58-0' \
+              '5E0-BA20-96EEA48A8F86.mp4?sid=052879182900010002577_00' \
+              '_A4eb29018e2c491b8a6684e99c125b82d&sign=51bd10b8cd652e07d1' \
+              'fceff35d7f73a8&ctype=50'
+
+    resp = request.urlretrieve(mp4_url, './imgs/aaa.mp4')
+
+    保存时将文件以 .mp4格式转存即可
+
+4.创建线程
+    t = threading.Thread(target=任务函数， args=(参数,))
+    自定义线程类
+    class MyThread(threading.Thread):
+        def __init__(self, name, ...)
+            super().__init__(name)
+
+        def run(self):
+            # 运行或启动线程之后执行的任务函数
+            # 编写任务的code
+
+    t = MyThread('线程名')
+    t.start()  启动线程
+
+    b.多线程的共享变量一致性问题
+        使用Lock锁对象解决变量（数据）一致性问题，使用Lock锁对象
+    lock = Threading.Lock()
+
+    在修改变量或数据前 加锁， 修改之后，解锁
+    if lock.acquire():  # 加锁
+        a = a + 10
+
+        lock.release()  # 解锁
+
+    c.队列Queue实现多线程之间的数据同步
+        q = thrading.Queue(10)
+        # 在生产线程中生产数据（消息）
+            q.put(obj, timeout=5)  # 向仓库（q）中存数据时，如果仓库已满，则可以等待五秒时间
+        如果timeout已过，且仓库还是满的，则会抛出异常（可以使用，try，finally进行处理）
+
+        # 在消费线程中消费数据（获取数据）
+            q.get(timeout=5)
+
+5.队列的其他方法
+    队列除了基本的消费和生产方法之外：
+        q.put(obj, timeout=5) 生产者向仓库进行存数据
+        q.get(obj, timeout=5)  消费者从仓库取数据
+
+
+6.协程
+    在同一个线程中，让两个函数之间协同完成一个（生产--消费）任务
+    使用yield生产消息，
+    使用next(func名)获取消息
+
+    使用 m = yield i ：  等待接收一个消息给m，同时产出一个i消息
+    i = g.send(m的数据)
+    发送m的消息，并且收到yield i生产的i的消息
+
+7.网络爬虫中使用的urllib库
+    url 统一资源定位符， 确定你的网络资源，一般it民工称为 数据接口
+    uri 统一资源表示符
+    网络资源请求方法：
+    GET POST PUT/PATCH DELETE HEAD
+    1.发起网页的get请求
+        resp = urllib.request.rulopen(url)
+        # 从响应对象中获取相关的数据
+        resp.read()  获取网页的字节码数据
+
+        resp.readline()  读取一行
+        resp.readlnes()  读取所有行的数据
+        resp.getcode() / resp.status 读取响应状态， 200 为正常
+        resp.getheaders() 读取响应的头信息
+
+8.保存url网页或图片或视频资源
+    urllib.request.rulretrieve(url, filename=)  # 两个参数，第一个是url，第二个是文件路径
+
+    # 扩展，使用url资源路径重命名文件名
+    m = hashlib.md5()  # md5算法消息摘要
+    m.updata(url.encode())
+    return m.hexdigest()
+
+    filename += '.' + url.split('.')[-1]
+
+9.urllib.parse 模块的应用
+    在请求参数中，如果带有中文，则需要进行url编码处理
+    1) urlencode()使用
+        参数必须是dict，如：
+        query = {'wd': '培训'}
+        params = urllib.parse.urlencode(query)
+        # 返回的是 wd=%asfasdf%3944jlket....等等格式字符串
+        优点： 适合多个参数的url编码
+
+    2) quote() 使用
+        参数是字符串str，如：
+        param = urllib.parse.quote('培训')
+        # 返回 %sa89%skkjk%sd 的类型字符串
+
+        可以使用unquote()函数，对rul编码的字符串进行解码
+
+10. xpath：安装进chrome 进more tools--> extensions--> 然后把xpath拖入chrome--> ok
+    安装： pip3 install lxml
+    Python 标准库中自带了 xml 模块，但是性能不够好，而且缺乏一些人性化的 API，相比之下，
+    第三方库 lxml 是用 Cython 实现的，而且增加了很多实用的功能，可谓爬虫处理网页数据的一件利器。
+    lxml 大部分功能都存在 lxml.etree中
+
+------------------------------------------简单注意事项-------------------------------------------------
+
+注意事项:
+    1. 为什么要使用 cookiejar？
+        因为我们要使用爬虫模拟登陆操作，必须使用cookie管理工具将我们登陆网站的cokkie
+        统一管理起来
+
+    模拟登陆的过程是什么？
+        1. 建立cookie管理工具对象
+            from http import cookiejar
+            cookieJar = cookiejar.CookieJar()
+        2. 建立handler对象
+            handler对象是用来处理cookie的，通过管理cookie来进行控制登陆操作
+            handler = request.HTTPCookieProcessor(cookieJar)
+        3. 创建请求的opener对象
+            opener = request.build_opener(handler)
+            opener对象相当于是一个浏览器，可以模仿用户在浏览器登陆网站的操作
+        4. 创建请求对象
+            params = parse.urlencode(loginParams)
+            loginReq = request.Request(url=login_url,
+                                       data=params.encode(), haeders=headers)
+        5. 发起登陆请求
+            resp = opener.open(loginReq)
+
+    以上五步，可以解决爬虫登陆操作
+
+    2. 找到登陆请求的接口
+        1. 我们首先真实登陆一次，这时候抓包工具就会抓到请求的报文，这就是我们登陆请求的接口
+            [Full request URI: http://www.renren.com/ajaxLogin/login?1=1&uniqueTimestamp=2018532254789]
+            上文就是我们真实登陆所捕获到的报文，也就是爬虫登陆操作的登陆接口
+        2. 我们构造登陆爬虫三要素：
+            1. 请求接口 url：  上文的接口  已解决
+            2. 请求登陆的参数： params，需要我们在下文构造
+            3. 伪造的请求头部： headers， 已利用
+
+    3. 正则：使用正则解析我们所爬取的内容（得到想要的数据）
+        代理爬取：代理使用来保护我们真实ip地址，代理需要花钱买，一般被封的都是代理ip，不会影响到我们真是ip
+        import re  # 导入正则模块
+        regex = re.compile(r'1[3-9]\d{9}$')  # 将一个正则字符串编译成正则对象
+        # 可以通过正则对象进行匹配，截取，查找等等... 爬虫一般都是用findall方法
+        list = regex.findall('搜索的文本')
+
+        扩展js的正则：
+            if(/1[3-9]\d{9}/.test('18876356478')){
+
+            }
+
+        重要的内容：
+            正则中使用元字符（*, +, ?)的含义 : 贪婪模式
+            *： 0 --- 多
+            +： 1 --- 多
+            ?： 0 --- 1
+            禁止贪婪模式，可以在元字符的后面使用 '?' ，如：  .*?,  .+?,  \d{1, 9}?,   禁用贪婪模式
+
+        其他的元字符
+            .  任意字符， 除了空白(\n, \t, \f 换页, 空格), \r\n：在windews里面是换行， \n：在linux里面是换行
+            \w 数字，字母，下划线
+            \W 非(数字，字母，下划线)
+            \d 数字
+            \D 非数字
+            \s 空白
+            \S 非空白
+            \b 边界
+            ^  字符开始
+            $  字符结尾
+
+        分组：
+        1. 分组名可以匹配： disen前后数字都要保持一致
+            (?P<id>\d)disen(?P=id)
+            8disen8,    9disen9
+        2. 编号也可以匹配：
+            (\d+)disen\1  : 这个\1指的就是第一组，用\1, \2, 来匹配每个组
+            688disen688
+
+        3. re.findall(r'(?P<id>\d)abc(?P=id)', '8abc8', re.S)  # re.S单行匹配
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
